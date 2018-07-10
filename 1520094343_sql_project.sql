@@ -101,10 +101,41 @@ different costs to members (the listed costs are per half-hour 'slot'), and
 the guest user's ID is always 0. Include in your output the name of the
 facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. */
-
+SELECT CONCAT(fac.name, ', ', mem.firstname) AS facility_member,
+	   CASE WHEN mem.firstname LIKE '%guest%' THEN fac.guestcost * book.slots
+	        WHEN mem.firstname NOT LIKE '%guest%' THEN fac.membercost * book.slots
+	        END AS cost
+	FROM Members mem
+	JOIN Bookings book 
+	  ON mem.memid = book.memid
+	JOIN Facilities fac 
+	  ON book.facid = fac.facid
+   WHERE book.starttime LIKE '%2012-09-14%'
+     AND (CASE WHEN mem.firstname LIKE '%guest%' THEN fac.guestcost * book.slots
+	        WHEN mem.firstname NOT LIKE '%guest%' THEN fac.membercost * book.slots
+	        END) > 30
+   ORDER BY cost DESC 
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. */
-
+SELECT CONCAT(sub.fac_name, ', ', mem.firstname) AS facility_member,
+	   cost,
+	   sub.starttime
+	FROM Members mem
+	JOIN (
+           SELECT CASE WHEN book.memid = 0 THEN fac.guestcost * book.slots
+                       WHEN book.memid <> 0 THEN fac.membercost * book.slots
+        	            END AS cost,
+                  fac.name as fac_name,
+                  book.memid as memid,
+                  book.starttime as starttime
+        	FROM Bookings book
+            JOIN Facilities fac
+              ON book.facid = fac.facid
+           WHERE book.starttime LIKE '%2012-09-14%'
+    	 ) sub
+      ON mem.memid = sub.memid
+  WHERE cost > 30
+  ORDER BY cost DESC
 
 /* Q10: Produce a list of facilities with a total revenue less than 1000.
 The output of facility name and total revenue, sorted by revenue. Remember
