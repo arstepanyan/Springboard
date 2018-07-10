@@ -140,3 +140,20 @@ SELECT CONCAT(sub.fac_name, ', ', mem.firstname) AS facility_member,
 /* Q10: Produce a list of facilities with a total revenue less than 1000.
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
+SELECT sub.fac_name AS facility_name,
+       SUM(sub.cost) AS total_revenue
+	FROM Members mem
+	JOIN (
+           SELECT CASE WHEN book.memid = 0 THEN fac.guestcost * book.slots
+                       WHEN book.memid <> 0 THEN fac.membercost * book.slots
+        	            END AS cost,
+                  fac.name as fac_name,
+                  book.memid as memid
+        	 FROM Bookings book
+             JOIN Facilities fac
+               ON book.facid = fac.facid
+    	 ) sub
+      ON mem.memid = sub.memid
+   GROUP BY sub.fac_name
+  HAVING total_revenue < 1000
+   ORDER BY total_revenue
